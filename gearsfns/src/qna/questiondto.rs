@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::questionlist;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 #[serde(tag = "type")]
 pub enum Node {
     #[serde(rename = "integer")]
@@ -19,7 +19,7 @@ pub enum Node {
     Array(ArrayNode),
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ObjectNode {
     pub title: String,
@@ -29,21 +29,21 @@ pub struct ObjectNode {
     pub required: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct StringNode {
     pub title: String,
     pub description: String,
     pub default: Option<String>,
 }
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct BooleanNode {
     pub title: String,
     pub description: String,
     pub default: Option<bool>,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct IntegerNode {
     pub title: String,
@@ -57,7 +57,7 @@ pub struct IntegerNode {
     pub maximum: Option<i32>,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct FixedListNode {
     pub title: String,
     pub description: String,
@@ -68,7 +68,7 @@ pub struct FixedListNode {
     pub item_names: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct ArrayNode {
     pub title: String,
     pub description: String,
@@ -141,14 +141,14 @@ impl From<questionlist::Question> for Node {
 }
 
 pub mod ui_schema {
-    use super::super::questionlist::question::ui;
     use super::super::questionlist;
+    use super::super::questionlist::question::ui;
 
     use std::collections::HashMap;
 
     pub type UiObject = HashMap<String, UiNode>;
 
-    #[derive(Debug, Serialize, Clone)]
+    #[derive(Debug, Serialize, Clone, PartialEq)]
     pub struct UiNode {
         #[serde(skip_serializing_if = "Option::is_none")]
         placeholder: Option<String>,
@@ -187,7 +187,8 @@ pub mod ui_schema {
     }
     impl From<questionlist::QuestionList> for UiObject {
         fn from(question_list: questionlist::QuestionList) -> Self {
-            question_list.questions
+            question_list
+                .questions
                 .iter()
                 .map(|q| (q.get_id().to_string(), q.clone().into()))
                 .collect()
@@ -212,7 +213,7 @@ pub mod ui_schema {
                         UiNode::empty()
                     }
                 }
-                _ => UiNode::empty()
+                _ => UiNode::empty(),
             }
         }
     }

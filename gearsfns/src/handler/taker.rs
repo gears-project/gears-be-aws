@@ -1,7 +1,6 @@
 use lambda::{handler_fn, Context};
 
-#[macro_use]
-extern crate serde;
+use gearsfn::qna::{questiondto, questionlist};
 
 type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
 
@@ -11,6 +10,7 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
+/*
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 struct CustomEvent {
     #[serde(rename = "firstName")]
@@ -21,10 +21,15 @@ struct CustomEvent {
 struct CustomOutput {
     message: String,
 }
+*/
 
-async fn taker(e: CustomEvent, _c: Context) -> Result<CustomOutput, Error> {
-    let res = format!("oi, oi, oi {}", e.first_name);
-    Ok(CustomOutput { message: res })
+fn build_sample() -> questiondto::Node {
+    let q = questionlist::sample_string_questions();
+    questiondto::Node::Object(q.into())
+}
+
+async fn taker(_e: (), _c: Context) -> Result<questiondto::Node, Error> {
+    Ok(build_sample())
 }
 
 #[cfg(test)]
@@ -33,16 +38,11 @@ mod tests {
 
     #[tokio::test]
     async fn taker_handles() {
-        let event = CustomEvent {
-            first_name: "42".to_string(),
-        };
         assert_eq!(
-            taker(event.clone(), Context::default())
+            taker((), Context::default())
                 .await
                 .expect("expected Ok(_) value"),
-            CustomOutput {
-                message: "oi, oi, oi 42".to_string(),
-            }
+            build_sample()
         )
     }
 }

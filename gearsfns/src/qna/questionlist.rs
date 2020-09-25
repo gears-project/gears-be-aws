@@ -134,10 +134,14 @@ pub mod question {
 
         impl fmt::Display for TrueOrFalseWidget {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                write!(f, "{}", match self {
-                    Self::Radio => "radio",
-                    Self::Select => "select",
-                })
+                write!(
+                    f,
+                    "{}",
+                    match self {
+                        Self::Radio => "radio",
+                        Self::Select => "select",
+                    }
+                )
             }
         }
     }
