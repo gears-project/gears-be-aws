@@ -42,7 +42,7 @@ mod tests {
     async fn taker_handles() {
         let event = json!({});
         assert_eq!(
-            taker(event.clone(),  Context::default())
+            taker(event.clone(), Context::default())
                 .await
                 .expect("expected Ok(_) value"),
             build_sample()

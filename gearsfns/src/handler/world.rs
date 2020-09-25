@@ -1,7 +1,14 @@
 use lambda_http::{handler, lambda, Context, IntoResponse, Request};
-use serde_json::json;
+use serde_json::to_value;
+
+use gearsfn::qna::{questiondto, questionlist};
 
 type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
+
+fn build_sample() -> questiondto::Node {
+    let q = questionlist::sample_string_questions();
+    questiondto::Node::Object(q.into())
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -12,9 +19,7 @@ async fn main() -> Result<(), Error> {
 async fn world(_: Request, _: Context) -> Result<impl IntoResponse, Error> {
     // `serde_json::Values` impl `IntoResponse` by default
     // creating an application/json response
-    Ok(json!({
-    "message": "Go Serverless v1.0! Your function executed successfully!"
-    }))
+    Ok(to_value(build_sample())?)
 }
 
 #[cfg(test)]
@@ -24,10 +29,7 @@ mod tests {
     #[tokio::test]
     async fn world_handles() {
         let request = Request::default();
-        let expected = json!({
-        "message": "Go Serverless v1.0! Your function executed successfully!"
-        })
-        .into_response();
+        let expected = to_value(build_sample()).unwrap().into_response();
         let response = world(request, Context::default())
             .await
             .expect("expected Ok(_) value")
