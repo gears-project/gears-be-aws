@@ -1,5 +1,7 @@
 use lambda::{handler_fn, Context};
-use serde_json::Value;
+
+#[macro_use]
+extern crate serde;
 
 type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
 
@@ -9,25 +11,38 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
-async fn taker(event: Value, _: Context) -> Result<Value, Error> {
-    Ok(event)
+#[derive(Deserialize, Debug, Clone, PartialEq)]
+struct CustomEvent {
+    #[serde(rename = "firstName")]
+    first_name: String,
+}
+
+#[derive(Serialize, Debug, PartialEq)]
+struct CustomOutput {
+    message: String,
+}
+
+async fn taker(e: CustomEvent, _c: Context) -> Result<CustomOutput, Error> {
+    let res = format!("oi, oi, oi {}", e.first_name);
+    Ok(CustomOutput { message: res })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
 
     #[tokio::test]
     async fn taker_handles() {
-        let event = json!({
-            "answer": 42
-        });
+        let event = CustomEvent {
+            first_name: "42".to_string(),
+        };
         assert_eq!(
             taker(event.clone(), Context::default())
                 .await
                 .expect("expected Ok(_) value"),
-            event
+            CustomOutput {
+                message: "oi, oi, oi 42".to_string(),
+            }
         )
     }
 }
