@@ -1,4 +1,5 @@
 use lambda::{handler_fn, Context};
+use serde_json::Value;
 
 use gearsfn::qna::{questiondto, questionlist};
 
@@ -28,18 +29,20 @@ fn build_sample() -> questiondto::Node {
     questiondto::Node::Object(q.into())
 }
 
-async fn taker(_e: (), _c: Context) -> Result<questiondto::Node, Error> {
+async fn taker(_e: Value, _c: Context) -> Result<questiondto::Node, Error> {
     Ok(build_sample())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[tokio::test]
     async fn taker_handles() {
+        let event = json!({});
         assert_eq!(
-            taker((), Context::default())
+            taker(event.clone(),  Context::default())
                 .await
                 .expect("expected Ok(_) value"),
             build_sample()
