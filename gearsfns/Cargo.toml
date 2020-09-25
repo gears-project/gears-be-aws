@@ -8,13 +8,17 @@ tokio = { version = "0.2", features = ["macros"] }
 lambda = { git = "https://github.com/awslabs/aws-lambda-rust-runtime/", branch = "master"}
 lambda_http = { git = "https://github.com/awslabs/aws-lambda-rust-runtime/", branch = "master"}
 
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
+jsonschema = "0.3"
+uuid = { version = "0.8.1", features = ["serde", "v4"] }
+
 [[bin]]
-name = "hello"
-path = "src/bin/hello.rs"
+name = "taker"
+path = "src/handler/taker.rs"
 
 [[bin]]
 name = "world"
-path = "src/bin/world.rs"
+path = "src/handler/world.rs"
 
