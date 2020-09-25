@@ -50,7 +50,7 @@ functions:
     # handler value syntax is `{cargo-package-name}.{bin-name}`
     # or `{cargo-package-name}` for short when you are building a
     # default bin for a given package.
-    handler: hello
+    handler: hello.hello
     events:
       - http:
           path: /hello
@@ -89,7 +89,7 @@ functions:
 #      variable2: value2
 
   world:
-    handler: world
+    handler: hello.world
     events:
       - http:
           path: /world
