@@ -1,5 +1,5 @@
 use jsonschema::{Draft, JSONSchema};
-use lambda_http::{handler, lambda, Context, IntoResponse, Request};
+use lambda_http::{handler, lambda, Body, Context, IntoResponse, Request, Response};
 use serde_json::{json, Value};
 
 use gearsfn::qna::{questiondto, questionlist};
@@ -17,23 +17,67 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
-async fn myhandler(req: Request, _: Context) -> Result<impl IntoResponse, Error> {
-    match serde_json::from_slice::<Value>(req.body().as_ref()) {
-        Ok(val) => {
-            let question = serde_json::to_value(&build_sample()).unwrap();
-            let compiled = JSONSchema::compile(&question, Some(Draft::Draft7)).unwrap();
-            let result = compiled.validate(&val);
+struct ApiResponse {
+    status: u16,
+    body: Value,
+}
 
-            if let Err(errors) = result {
-                for error in errors {
-                    println!("Validation error: {}", error)
-                }
-                Ok(json!({"status":"ok"}))
-            } else {
-                Ok(json!({"status":"error"}))
-            }
+impl ApiResponse {
+    pub fn ok() -> Self {
+        Self::default()
+    }
+    pub fn error() -> Self {
+        Self {
+            status: 400,
+            body: json!({
+                "error": "bad input",
+            }),
         }
-        Err(_e) => Ok(json!({"status":"error"})),
+    }
+}
+
+impl Default for ApiResponse {
+    fn default() -> Self {
+        Self {
+            status: 200,
+            body: json!({}),
+        }
+    }
+}
+
+impl IntoResponse for ApiResponse {
+    fn into_response(self) -> Response<Body> {
+        Response::builder()
+            .status(self.status)
+            .header("Content-Type", "application/json")
+            .header("Access-Control-Allow-Origin", "*")
+            .header("Access-Control-Allow-Credentials", "true")
+            .body(Body::Text(serde_json::to_string(&self.body).unwrap()))
+            .expect("err creating response")
+    }
+}
+
+async fn myhandler(req: Request, _: Context) -> Result<impl IntoResponse, Error> {
+    if let Ok(val) = serde_json::from_slice::<Value>(req.body().as_ref()) {
+        let question = serde_json::to_value(&build_sample()).unwrap();
+        let compiled = JSONSchema::compile(&question, Some(Draft::Draft7)).unwrap();
+        let result = compiled.validate(&val);
+
+        if let Err(errors) = result {
+            for error in errors {
+                println!("Validation error: {}", error)
+            }
+            Ok(ApiResponse {
+                status: 400,
+                body: json!({
+                    "error": "input does not validate",
+                }),
+            })
+        } else {
+            Ok(ApiResponse::ok())
+        }
+    } else {
+        Ok(ApiResponse::error())
     }
 }
 
@@ -43,11 +87,10 @@ mod tests {
     use serde_json::json;
 
     #[tokio::test]
-    async fn _handles() {
+    async fn _handles_empty_request() {
         let request = Request::default();
-        // let expected = to_value(build_sample()).unwrap().into_response();
         let expected = json!({
-            "status": "error"
+            "error": "bad input"
         })
         .into_response();
         let response = myhandler(request, Context::default())
