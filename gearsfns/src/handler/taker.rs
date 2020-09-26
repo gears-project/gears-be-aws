@@ -1,36 +1,40 @@
-use lambda::{handler_fn, Context};
-use serde_json::Value;
+use jsonschema::{Draft, JSONSchema};
+use lambda_http::{handler, lambda, Context, IntoResponse, Request};
+use serde_json::{json, Value};
 
 use gearsfn::qna::{questiondto, questionlist};
 
 type Error = Box<dyn std::error::Error + Sync + Send + 'static>;
-
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-    lambda::run(handler_fn(taker)).await?;
-    Ok(())
-}
-
-/*
-#[derive(Deserialize, Debug, Clone, PartialEq)]
-struct CustomEvent {
-    #[serde(rename = "firstName")]
-    first_name: String,
-}
-
-#[derive(Serialize, Debug, PartialEq)]
-struct CustomOutput {
-    message: String,
-}
-*/
 
 fn build_sample() -> questiondto::Node {
     let q = questionlist::sample_string_questions();
     questiondto::Node::Object(q.into())
 }
 
-async fn taker(_e: Value, _c: Context) -> Result<questiondto::Node, Error> {
-    Ok(build_sample())
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+    lambda::run(handler(myhandler)).await?;
+    Ok(())
+}
+
+async fn myhandler(req: Request, _: Context) -> Result<impl IntoResponse, Error> {
+    match serde_json::from_slice::<Value>(req.body().as_ref()) {
+        Ok(val) => {
+            let question = serde_json::to_value(&build_sample()).unwrap();
+            let compiled = JSONSchema::compile(&question, Some(Draft::Draft7)).unwrap();
+            let result = compiled.validate(&val);
+
+            if let Err(errors) = result {
+                for error in errors {
+                    println!("Validation error: {}", error)
+                }
+                Ok(json!({"status":"ok"}))
+            } else {
+                Ok(json!({"status":"error"}))
+            }
+        }
+        Err(_e) => Ok(json!({"status":"error"})),
+    }
 }
 
 #[cfg(test)]
@@ -39,13 +43,17 @@ mod tests {
     use serde_json::json;
 
     #[tokio::test]
-    async fn taker_handles() {
-        let event = json!({});
-        assert_eq!(
-            taker(event.clone(), Context::default())
-                .await
-                .expect("expected Ok(_) value"),
-            build_sample()
-        )
+    async fn _handles() {
+        let request = Request::default();
+        // let expected = to_value(build_sample()).unwrap().into_response();
+        let expected = json!({
+            "status": "error"
+        })
+        .into_response();
+        let response = myhandler(request, Context::default())
+            .await
+            .expect("expected Ok(_) value")
+            .into_response();
+        assert_eq!(response.body(), expected.body())
     }
 }

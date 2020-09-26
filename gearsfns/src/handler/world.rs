@@ -17,8 +17,6 @@ async fn main() -> Result<(), Error> {
 }
 
 async fn world(_: Request, _: Context) -> Result<impl IntoResponse, Error> {
-    // `serde_json::Values` impl `IntoResponse` by default
-    // creating an application/json response
     Ok(to_value(build_sample())?)
 }
 
