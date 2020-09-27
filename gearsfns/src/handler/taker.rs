@@ -30,7 +30,7 @@ impl ApiResponse {
         Self {
             status: 400,
             body: json!({
-                "error": "bad input",
+                "message": "bad input",
             }),
         }
     }
@@ -64,13 +64,16 @@ async fn myhandler(req: Request, _: Context) -> Result<impl IntoResponse, Error>
         let result = compiled.validate(&val);
 
         if let Err(errors) = result {
+            let mut errorlist = Vec::<String>::new();
             for error in errors {
-                println!("Validation error: {}", error)
+                println!("Validation error: {}", error);
+                errorlist.push(format!("{}", error));
             }
             Ok(ApiResponse {
                 status: 400,
                 body: json!({
-                    "error": "input does not validate",
+                   "message": "input does not validate",
+                    "errors": errorlist,
                 }),
             })
         } else {
@@ -90,7 +93,7 @@ mod tests {
     async fn _handles_empty_request() {
         let request = Request::default();
         let expected = json!({
-            "error": "bad input"
+            "message": "bad input"
         })
         .into_response();
         let response = myhandler(request, Context::default())
