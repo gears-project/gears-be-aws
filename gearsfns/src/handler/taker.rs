@@ -1,6 +1,6 @@
 use jsonschema::{Draft, JSONSchema};
 use lambda_http::{handler, lambda, Body, Context, IntoResponse, Request, Response};
-use serde_json::{json, Value};
+use serde_json::{json, to_value, Value};
 
 use gearsfn::qna::{questiondto, questionlist};
 
@@ -13,7 +13,7 @@ fn build_sample() -> questiondto::Node {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    lambda::run(handler(myhandler)).await?;
+    lambda::run(handler(router)).await?;
     Ok(())
 }
 
@@ -57,7 +57,25 @@ impl IntoResponse for ApiResponse {
     }
 }
 
-async fn myhandler(req: Request, _: Context) -> Result<impl IntoResponse, Error> {
+async fn router(req: Request, _: Context) -> Result<impl IntoResponse, Error> {
+    match req.method().as_str() {
+        "POST" => Ok(post_answer(req)),
+        "GET" => Ok(get_question(req)),
+        _ => Ok(ApiResponse {
+            status: 405,
+            body: json!({}),
+        }),
+    }
+}
+
+fn get_question(_: Request) -> ApiResponse {
+    ApiResponse {
+        status: 200,
+        body: to_value(build_sample()).unwrap(),
+    }
+}
+
+fn post_answer(req: Request) -> ApiResponse {
     if let Ok(val) = serde_json::from_slice::<Value>(req.body().as_ref()) {
         let question = serde_json::to_value(&build_sample()).unwrap();
         let compiled = JSONSchema::compile(&question, Some(Draft::Draft7)).unwrap();
@@ -69,18 +87,18 @@ async fn myhandler(req: Request, _: Context) -> Result<impl IntoResponse, Error>
                 println!("Validation error: {}", error);
                 errorlist.push(format!("{}", error));
             }
-            Ok(ApiResponse {
+            ApiResponse {
                 status: 400,
                 body: json!({
                    "message": "input does not validate",
                     "errors": errorlist,
                 }),
-            })
+            }
         } else {
-            Ok(ApiResponse::ok())
+            ApiResponse::ok()
         }
     } else {
-        Ok(ApiResponse::error())
+        ApiResponse::error()
     }
 }
 
@@ -90,13 +108,22 @@ mod tests {
     use serde_json::json;
 
     #[tokio::test]
-    async fn _handles_empty_request() {
+    async fn post_answer_handles_empty_request() {
         let request = Request::default();
-        let expected = json!({
-            "message": "bad input"
-        })
-        .into_response();
-        let response = myhandler(request, Context::default())
+        let expected = json!(build_sample()).into_response();
+        let response = router(request, Context::default())
+            .await
+            .expect("expected Ok(_) value")
+            .into_response();
+        assert_eq!(response.body(), expected.body())
+    }
+
+    #[tokio::test]
+    async fn get_question_handles() {
+        let request = Request::default();
+        // let expected = to_value(build_sample()).unwrap().into_response();
+        let expected = json!(build_sample()).into_response();
+        let response = router(request, Context::default())
             .await
             .expect("expected Ok(_) value")
             .into_response();

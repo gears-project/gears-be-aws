@@ -59,6 +59,10 @@ functions:
           path: /taker
           method: post
           cors: true
+      - http:
+          path: /taker
+          method: get
+          cors: true
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
 #    Check the event documentation for details
@@ -92,13 +96,13 @@ functions:
 #    environment:
 #      variable2: value2
 
-  world:
-    handler: gearsfns.world
-    events:
-      - http:
-          path: /taker
-          method: get
-          cors: true
+#   world:
+#     handler: gearsfns.world
+#     events:
+#       - http:
+#           path: /taker
+#           method: get
+#           cors: true
 
 # you can add CloudFormation resource templates here
 #resources:
