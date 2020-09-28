@@ -26,7 +26,3 @@ path = "src/lib.rs"
 name = "taker"
 path = "src/handler/taker.rs"
 
-[[bin]]
-name = "world"
-path = "src/handler/world.rs"
-
